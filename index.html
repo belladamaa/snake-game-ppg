@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake Game PPG</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style type="text/css">
+	#board-wrapper{
+		width: calc(630px + 228px);
+		height: 530px;
+		padding: 10px;
+		border: 5px solid black;
+		border-radius: 10px;
+		margin: 20px auto;
+	}
+	#board{
+		width: 600px;
+		height: 500px;
+		background: url('background.jpeg') center center no-repeat;
+		background-size: cover;
+		border-radius: 10px;
+		border: 4px solid black;
+		position: relative;
+	}
+	#instruction{
+		width: 200px;
+		padding: 10px;
+		border: 4px solid black;
+		border-radius: 8px;
+	}
+	#information{
+		font-size: 20px;
+	}
+	#red_pion{
+		position: absolute;
+		top: 400px;
+		left: 0;
+		width: 100px;
+		height: 100px;
+		background: url('red_blue_pion.png') center center no-repeat;
+		background-size: 70px;
+		transition: all .5s ease-in-out .25s;
+		z-index: 3;
+	}
+	#blue_pion{
+		position: absolute;
+		top: 400px;
+		left: 0;
+		width: 100px;
+		height: 100px;
+		background: url('blue_pion.png') center center no-repeat;
+		background-size: 70px;
+		transition: all .5s ease-in-out .25s;
+		z-index: 2;
+	}
+	button#dice_button{
+		padding: 10px 15px;
+		border: 3px solid black;
+		font-size: 15px;
+		font-weight: bold;
+	}
+	button#dice_button[disabled]{
+		background: grey;
+		cursor: not-allowed;
+		user-select: none;
+	}
+
+</style>
+</head>
+<body>
+
+<div class="container mt-3 text-center">
+	<div id="board-wrapper" class="bg-warning d-flex justify-content-between align-items-center">
+		<div id="board" class="mx-auto ">
+			<div id="red_pion"></div>
+			<div id="blue_pion"></div>
+		</div>
+
+		<div id="instruction">
+			<div id="dice">
+				<button id="dice_button" class="btn-success fw-bold text-white d-block w-100 rounded rounded-3">Acak Dadu</button>
+			</div>
+			<div class="fw-bold h6 mb-0 py-2" id="info">Giliran Pion Merah</div>
+
+			<div class="bg-white border border-5 border-danger h6 rounded rounded-3 p-2" style="border-width: 5px;">
+				Pertanyaan:
+
+				<div id="question" class="bg-info text-white p-3 mt-2 rounded rounded-3">
+					<i>Acak dadu dulu ya buat munculin pertanyaan ;)</i>
+				</div>
+
+				<div class="mt-3">
+					<input id="answer" class="form-control text-center fs-5 mb-2" type="text" placeholder="Jawaban" style="box-shadow: none;">
+					<button id="answer_button" class="btn btn-block w-100 btn-primary h6 mb-2">Kirim</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="h3 text-center text-danger" id="information">
+		Pion Merah mendapatkan Giliran Pertama
+	</div>
+</div>
+
+<script>
+	const format = ["Hitunglah [parameter] [shape] dengan jari-jari [x] cm dan tinggi [y] cm!", "Jika jari-jari sebuah [shape] adalah [x] cm dan tinggi [y] cm, berapakah [parameter] [shape] tersebut?", "Diberikan sebuah [shape] dengan jari-jari [x] cm dan tinggi [y] cm. Hitunglah [parameter] [shape] tersebut!", "Tentukan [parameter] [shape] jika jari-jarinya [x] cm dan tinggi [y] cm!", "Berapakah [parameter] [shape] dengan jari-jari [x] cm dan tinggi [y] cm?", "Sebuah [shape] memiliki jari-jari [x] cm dan tinggi [y] cm. Hitunglah [parameter] [shape] tersebut!"];
+
+	const shapes = ["Tabung", "Kerucut", "Bola"];
+	const parameters = ["Luas Permukaan", "Volume"];
+	var chance = ["red", "Merah"];
+
+	var step = 0;
+	const pi227 = 22/7;
+	const pi314 = 3.14;
+	var answer;
+
+	function getStep(){
+		return Math.floor(Math.random() * 6) + 1;
+	}
+
+	function invalidQuestion(init){
+		return "Gagal dapetin soal, coba acak dadu lagi ya";
+	}
+
+	function getQuestion(){
+		let x = Math.floor(Math.random() * 20) + 1;
+		let y = Math.floor(Math.random() * 20) + 1;
+		let question = format[Math.floor(Math.random() * format.length)];
+		let shape = shapes[Math.floor(Math.random() * shapes.length)];
+		let parameter = parameters[Math.floor(Math.random() * parameters.length)];
+		if(shape == shapes[2]){
+			question = question.replaceAll(" dan tinggi [y] cm", "");
+		}
+		question = question.replaceAll("[shape]", shape.toString());
+		question = question.replaceAll("[parameter]", parameter.toString());
+		question = question.replaceAll("[x]", x.toString());
+		question = question.replaceAll("[y]", y.toString());
+
+		/* Set the answer */
+
+		/* Tabung */
+		if(shape == shapes[0]){
+			/* Luas Permukaan */
+			if(parameter == parameters[0]){
+				if(x % 7 == 0){
+					answer = 2*pi227*x*(x+y);
+				}
+				else{
+					answer = 2*pi314*x*(x+y);
+				}
+			}
+			/* Volume */
+			else if(parameter == parameters[1]){
+				if(x % 7 == 0){
+					answer = pi227*(x**2)*y;
+				}
+				else{
+					answer = pi314*(x**2)*y;
+				}
+			}
+			else{
+				return invalidQuestion(0);
+			}
+		}
+		/* Kerucut */
+		else if(shape == shapes[1]){
+			/* Luas Permukaan */
+			let s = Math.sqrt(x**2+y**2);
+			if(parameter == parameters[0]){
+				if(x % 7 == 0){
+					answer = pi227*x*(x+s);
+				}
+				else{
+					answer = pi314*x*(x+s);
+				}
+			}
+			/* Volume */
+			else if(parameter == parameters[1]){
+				if(x % 7 == 0){
+					answer = (1/3)*pi227*(x**2)*y;
+				}
+				else{
+					answer = (1/3)*pi314*(x**2)*y;
+				}
+			}
+			else{
+				return invalidQuestion(1);
+			}
+		}
+		/* Bola */
+		else if(shape == shapes[2]){
+			/* Luas Permukaan */
+			if(parameter == parameters[0]){
+				let x2 = x**2;
+				if(x % 7 == 0){
+					answer = 4*pi227*x2
+				}
+				else{
+					answer = 4*pi314*x2;
+				}
+			}
+			/* Volume */
+			else if(parameter == parameters[1]){
+				if(x % 7 == 0){
+					answer = (4/3)*pi227*(x**3);
+				}
+				else{
+					answer = (4/3)*pi314*(x**3);
+				}
+			}
+			else{
+				return invalidQuestion(2);
+			}
+		}
+		else{
+			return invalidQuestion();
+		}
+
+		answer = parseFloat(answer).toFixed(2);
+		console.log(answer);
+		return question;
+	}
+
+	$("#answer_button, #answer").prop("disabled", true);
+	$('#dice_button').click(function(){
+		$(this).prop("disabled", true);
+		$("#answer").val("");
+		$("#info").html("Mengacak Dadu...");
+		$('#question').html("Lagi nyari soal...");
+		setTimeout(function(){
+			let steps = getStep();
+			$("#info").html("Mendapatkan " + steps + " Langkah");
+			step = steps;
+			$('#question').html(getQuestion());
+			$('#dice_button').prop("disabled", false);
+			$("#answer_button, #answer").prop("disabled", false);
+		}, 3000);
+	});
+
+	$("#answer_button").click(function(){
+		$("#answer_button, #answer").prop("disabled", true);
+		$("#info").html("Giliran Pion " + chance[1]);
+		$("#question").html('<i>Acak dadu dulu ya buat munculin pertanyaan ;)</i>');
+
+		console.log(parseFloat($("#answer").val()), (parseFloat(answer)-1), (parseFloat(answer)+1));
+
+		//if(){
+		let correct = (parseFloat($("#answer").val()) > (parseFloat(answer)-1) && parseFloat($("#answer").val()) < (parseFloat(answer)+1));
+			
+			console.log("step: " + step);
+			let start_left = $("#" + chance[0] + "_pion").position().left;
+			console.log("left: " + start_left);
+			let start_top = $("#" + chance[0] + "_pion").position().top;
+			console.log("top: " + start_top);
+
+			let move = step*100;
+
+			console.log("Correct: ", correct);
+
+			// row 1
+			if(start_top == 400){
+				let end_left = parseInt(step*100 + start_left);
+				if(end_left > 500){
+					//move_pion('left', 500);
+					move_pion('top', 300);
+					move_pion('left', 500 - (end_left - 500 - 100));
+
+					if((500 - (end_left - 500 - 100)) == 100){
+						if(correct){
+							goingUp(0);
+						}
+					}
+				}
+				else{
+					if(correct){
+						console.log("EX")
+						move_pion('left', end_left);
+						if(end_left == 200){
+							goingUp(100);
+						}
+						if(end_left == 400){
+							goingUp(300);
+						}
+					}
+				}
+			}
+			// row 2
+			else if(start_top == 300){
+				let end_left = parseInt(start_left - (step*100));
+				if(end_left < 0){
+					//move_pion('left', 0);
+					move_pion('top', 200);
+					move_pion('left', move - start_left - 100);
+					if((move - start_left - 100) == 400){
+						if(!correct){
+							goingDown(300, 400);
+						}
+					}
+				}
+				else{
+					if(correct){
+						move_pion('left', start_left - move);
+						if((start_left - move) == 100){
+							goingUp(0);
+						}
+					}
+				}
+			}
+			// row 3
+			else if(start_top == 200){
+				let end_left = parseInt(step*100 + start_left);
+				if(end_left > 500){
+					//move_pion('left', 500);
+					move_pion('top', 100);
+					move_pion('left', 500 - (end_left - 500 - 100));
+					if((500 - (end_left - 500 - 100)) == 300){
+						if(!correct){
+							goingDown(300, 300);
+						}
+					}
+					if((500 - (end_left - 500 - 100)) == 400){
+						if(correct){
+							goingUp(0);
+						}
+					}
+					if((500 - (end_left - 500 - 100)) == 500){
+						if(!correct){
+							goingDown(500, 300);
+						}
+					}
+				}
+				else{
+					if(correct){
+						move_pion('left', end_left);
+					}
+					else{
+						if(end_left == 400){
+							goingDown(300, 400);
+						}
+					}
+				}
+			}
+			// row 4
+			else if(start_top == 100){
+				let end_left = parseInt(start_left - (step*100));
+				if(end_left < 0){
+					//move_pion('left', 0);
+					move_pion('top', 0);
+					move_pion('left', move - start_left - 100);
+					if((move - start_left - 100) == 200){
+						if(!correct){
+							goingDown(0,400);
+						}
+					}
+				}
+				else{
+					if(correct){
+						move_pion('left', start_left - move);
+						if((start_left - move) == 400){
+							goingUp(0);
+						}
+					}
+					else{
+						if((start_left - move) == 300){
+							goingDown(300, 300);
+						}
+						if((start_left - move) == 500){
+							goingDown(500, 300);
+						}
+					}
+				}
+			}
+			// row 5
+			else{
+				let end_left = parseInt(step*100 + start_left);
+				if(end_left <= 500){
+					move_pion('top', 0);
+					move_pion('left', end_left);
+
+					if(end_left == 200){
+						if(!correct){
+							goingDown(0,400);
+						}
+					}
+				}
+			}
+
+			console.log("current: left: " + parseInt(start_left) + parseInt(move) + ', top: ' + start_top);
+
+			$("#information").html("Selamat jawaban kamu tepat!");
+
+			checkWinner();
+
+			if(!correct){
+				console.log($("#answer").val(), answer, $("#answer").val() == answer);
+				$("#answer").val("");
+
+				Swal.fire({
+				  title: "Jawaban belum tepat!",
+				  html: "Maaf jawaban kamu masih belum benar, belum bisa melangkah ke kotak selanjutnya ya. Jawaban soal tadi adalah: " + answer + " cm",
+				  icon: "error"
+				});
+			}
+		//}
+		
+		setTimeout(function(){
+			if(chance[1] == "Merah"){
+				chance[1] = "Biru";
+				chance[0] = "blue";
+			}
+			else{
+				chance[1] = "Merah";
+				chance[0] = "red";
+			}
+			$("#info, #information").html("Giliran Pion " + chance[1]);
+
+			if($("#red_pion").position().top == $("#blue_pion").position().top && $("#red_pion").position().left == $("#blue_pion").position().left){
+				$("#red_pion").css("background", "url('red_blue_pion.png') center center no-repeat");
+				$("#red_pion").css("background-size", "70px");
+			}
+			else{
+				$("#red_pion").css("background", "url('red_pion.png') center center no-repeat");
+				$("#red_pion").css("background-size", "70px");
+			}
+		}, 2000);
+	});
+
+	function move_pion(direction, value){
+		setTimeout(function(){
+			$("#" + chance[0] + "_pion").css(direction, value.toString() + 'px');
+		}, 500);
+	}
+
+	function checkWinner(){
+		setTimeout(function(){
+			if($("#" + chance[0] + "_pion").position().top === 0 && $("#" + chance[0] + "_pion").position().left === 500){
+				Swal.fire({
+					title: "Tim "+chance[1]+" Menang!",
+					html: "Selamat, Tim " + chance[1] + " telah memenangkan Permainan ini. Klik OK untuk mengatur ulang permainan",
+					icon: "success"
+				});
+			}
+		}, 1500);
+	}
+
+	function goingUp(value){
+		setTimeout(function(){
+			move_pion('top', value);
+		}, 1000);
+	}
+
+	function goingDown(left, top){
+		setTimeout(function(){
+			move_pion('left', left);
+			move_pion('top', top);
+		}, 1000);
+	}
+</script>
+</body>
+</html>
